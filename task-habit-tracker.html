@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task & Habit Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0b1020;
+      --bg-secondary: #141827;
+      --text-primary: #f5f5f5;
+      --text-secondary: #aaa;
+      --border: #333;
+      --accent: #4b8cff;
+      --success: #4bffb3;
+      --input-bg: #0b1020;
+      --input-border: #444;
+      --input-text: #f5f5f5;
+    }
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --input-bg: #ffffff;
+      --input-border: #d1d5db;
+      --input-text: #1e293b;
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border: #e2e8f0;
+        --accent: #3b82f6;
+        --success: #10b981;
+        --input-bg: #ffffff;
+        --input-border: #d1d5db;
+        --input-text: #1e293b;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background 0.3s, color 0.3s;
+      line-height: 1.4;
+    }
+    h1, h2, h3, p, span, div, li, label { color: inherit; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    h2 { margin-top: 0; font-size: 1.1rem; }
+    main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      max-width: 100%;
+    }
+    @media (min-width: 600px) {
+      main { grid-template-columns: 1fr 1fr; }
+      #task-form-section { grid-row: span 2; }
+      #templates-section { grid-row: 1; }
+      #task-list-section { grid-row: 2; }
+    }
+    @media (min-width: 900px) {
+      main { 
+        grid-template-columns: repeat(4, 1fr); 
+        grid-template-rows: 1fr 1fr 1fr;
+        gap: 1.5rem;
+      }
+      #task-form-section { grid-column: 1; grid-row: 1 / span 3; }
+      #templates-section { grid-column: 2; grid-row: 1; }
+      #task-list-section { grid-column: 3; grid-row: 1 / span 2; }
+      #recommendation-section { grid-column: 4; grid-row: 1; }
+      #report-section { grid-column: 4; grid-row: 2; }
+      #habit-section { grid-column: 2 / span 3; grid-row: 3; }
+      #sync-section { grid-column: 4; grid-row: 3; }
+    }
+    @media (min-width: 1400px) {
+      main { max-width: 1400px; margin: 0 auto; }
+    }
+    section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      background: var(--bg-secondary);
+    }
+    input, select, button {
+      color: var(--input-text) !important;
+      background: var(--input-bg) !important;
+      border: 1px solid var(--input-border) !important;
+      width: 100%;
+      margin-bottom: 0.5rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input::placeholder { color: var(--text-secondary) !important; }
+    input[type="checkbox"] { width: auto; margin-right: 0.5rem; }
+    button {
+      cursor: pointer;
+      font-weight: 500;
+      border-color: var(--accent) !important;
+    }
+    button:hover { background: var(--accent) !important; color: white !important; }
+    #task-list, #recommendation-list, #template-list { list-style: none; padding: 0; margin: 0; }
+    .task-item {
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      color: inherit;
+    }
+    .task-main-line { display: flex; align-items: flex-start; gap: 0.5rem; }
+    .task-title { flex: 1; font-weight: 500; color: inherit; }
+    .task-meta { font-size: 0.85rem; color: var(--text-secondary); }
+    .task-actions { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .task-actions button { padding: 0.4rem 0.6rem; font-size: 0.8rem; width: auto; }
+    .badge, .score-badge { 
+      font-size: 0.7rem; padding: 0.2rem 0.4rem; 
+      border-radius: 4px; font-weight: 500; color: var(--text-primary);
+    }
+    .badge { border: 1px solid var(--border); }
+    .badge-habit { border-color: var(--success); }
+    .badge-done { border-color: var(--accent); }
+    .score-badge {
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      color: white !important;
+      min-width: 2.5rem;
+      text-align: center;
+    }
+    .streak-indicator {
+      width: 24px; height: 24px; background: var(--success);
+      color: #000 !important; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.8rem;
+    }
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.5rem;
+    }
+    .template-btn {
+      padding: 0.75rem;
+      background: rgba(75,140,255,0.1);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.85rem;
+      color: inherit;
+    }
+    .template-btn:hover { background: var(--accent) !important; color: white !important; }
+    .template-name { font-weight: bold; }
+    .template-meta { font-size: 0.75rem; color: var(--text-secondary); }
+    #habit-calendar {
+      height: 300px; overflow-x: auto;
+      background: var(--bg-primary);
+      border-radius: 8px; padding: 1rem;
+    }
+    .calendar-container { display: flex; flex-direction: column; gap: 0.75rem; min-width: 450px; }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 38px);
+      grid-template-rows: repeat(6, 38px);
+      gap: 4px;
+      justify-content: start;
+    }
+    .weekday {
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--text-secondary);
+      text-align: center; padding: 4px 0;
+      writing-mode: vertical-rl;
+    }
+    .day-cell {
+      width: 38px; height: 38px; border-radius: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 500; border: 2px solid transparent;
+      transition: all 0.3s ease; position: relative; color: inherit;
+    }
+    .day-cell:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(75,140,255,0.3); }
+    .day-outside { opacity: 0.2; }
+    .day-empty { background: rgba(0,0,0,0.1); visibility: visible; }
+    .day-completed-1 { background: linear-gradient(135deg, var(--accent), rgba(75,140,255,0.4)); color: white; }
+    .day-completed-2 { background: linear-gradient(135deg, var(--success), rgba(75,255,179,0.6)); color: white; }
+    .day-completed-3+ { background: linear-gradient(135deg, var(--success), #22c55e); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(75,255,179,0.4); }
+    .day-today { background: var(--accent); color: white !important; box-shadow: 0 0 0 3px rgba(75,140,255,0.4); font-weight: bold; }
+    .legend { display: flex; gap: 1rem; font-size: 0.8rem; margin-top: 0.5rem; }
+    .legend-item { display: flex; align-items: center; gap: 0.25rem; }
+    .legend-swatch { width: 18px; height: 18px; border-radius: 3px; }
+    @media (max-width: 500px) {
+      #sync-section, #templates-section { display: none; }
+      body { padding: 0.25rem; }
+      #habit-calendar { height: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Task & Habit Tracker</h1>
+    <select id="theme-select">
+      <option value="system">System</option>
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </header>
+
+  <main>
+    <section id="task-form-section">
+      <h2>Add Task</h2>
+      <form id="task-form">
+        <input type="hidden" id="task-id" />
+        <input id="task-title" placeholder="Task title" required />
+        <input id="task-notes" placeholder="Notes (optional)" />
+        <input id="task-due" type="date" />
+        <input id="task-estimated" type="number" min="0" placeholder="Est. minutes" />
+        <input id="task-tags" placeholder="Tags (comma separated)" />
+        <label style="display:flex; gap:0.5rem; align-items:center; font-size:0.9rem;">
+          <input id="task-ishabit" type="checkbox" />
+          Habit (daily)
+        </label>
+        <button type="submit">Save Task</button>
+        <button type="button" id="task-cancel-edit" style="display:none; background:#6b7280;">Cancel</button>
+      </form>
+    </section>
+
+    <section id="templates-section">
+      <h2>Templates</h2>
+      <div id="template-list" class="template-grid"></div>
+      <button id="save-current-template" style="width:100%; font-size:0.85rem;">Save Current as Template</button>
+    </section>
+
+    <section id="task-list-section">
+      <h2>Tasks</h2>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+        <select id="filter-status">
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="done">Done</option>
+        </select>
+        <select id="filter-type">
+          <option value="all">All</option>
+          <option value="task">Tasks</option>
+          <option value="habit">Habits</option>
+        </select>
+      </div>
+      <ul id="task-list"></ul>
+    </section>
+
+    <section id="recommendation-section">
+      <h2>Recommendations</h2>
+      <button id="refresh-recs" style="width:100%; margin-bottom:0.5rem;">Refresh</button>
+      <ul id="recommendation-list"></ul>
+    </section>
+
+    <section id="report-section">
+      <h2>Performance</h2>
+      <div id="report-summary"></div>
+      <div style="margin-top:1rem;">
+        <select id="csv-period">
+          <option value="7">7 days</option>
+          <option value="30">30 days</option>
+          <option value="90" selected>90 days</option>
+          <option value="all">All time</option>
+        </select>
+        <button id="export-csv">Export CSV</button>
+      </div>
+    </section>
+
+    <section id="habit-section">
+      <h2>Habit Calendar</h2>
+      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; justify-content:center;">
+        <button id="prev-month">‹</button>
+        <span id="current-month" style="font-weight:600; min-width:100px;"></span>
+        <button id="next-month">›</button>
+      </div>
+      <div id="habit-calendar"></div>
+    </section>
+
+    <section id="sync-section">
+      <h2>Sync/Backup</h2>
+      <input id="sync-passphrase" type="password" placeholder="Passphrase (for encryption)" />
+      <button id="export-encrypted">Export Encrypted JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none;" />
+      <button id="import-trigger">Import & Decrypt</button>
+    </section>
+  </main>
+
+  <script>
+    // Storage
+    const STORAGE_KEY = "task_habit_app_v1";
+    const TEMPLATES_KEY = "task_templates_v1";
+    const THEME_KEY = "task_tracker_theme";
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : { tasks: [] };
+      } catch { return { tasks: [] }; }
+    }
+    function saveState(state) { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    let state = loadState();
+
+    // Utils
+    function uuid() { return crypto.randomUUID?.() || Date.now() + Math.random(); }
+    function todayISO() { return new Date().toISOString().slice(0,10); }
+    function isSameDay(a,b) { return a.slice(0,10) === b.slice(0,10); }
+
+    // DOM refs
+    const taskForm = document.getElementById("task-form");
+    const taskIdInput = document.getElementById("task-id");
+    const titleInput = document.getElementById("task-title");
+    const notesInput = document.getElementById("task-notes");
+    const dueInput = document.getElementById("task-due");
+    const estInput = document.getElementById("task-estimated");
+    const tagsInput = document.getElementById("task-tags");
+    const isHabitInput = document.getElementById("task-ishabit");
+    const cancelEditBtn = document.getElementById("task-cancel-edit");
+    const taskListEl = document.getElementById("task-list");
+    const recListEl = document.getElementById("recommendation-list");
+    const reportSummaryEl = document.getElementById("report-summary");
+    const templateListEl = document.getElementById("template-list");
+    const habitCalendarEl = document.getElementById("habit-calendar");
+    const filterStatusEl = document.getElementById("filter-status");
+    const filterTypeEl = document.getElementById("filter-type");
+
+    // Task CRUD
+    taskForm.onsubmit = e => {
+      e.preventDefault();
+      const id = taskIdInput.value || uuid();
+      const existing = state.tasks.find(t => t.id === id);
+      const task = {
+        id, title: titleInput.value.trim(),
+        notes: notesInput.value.trim(),
+        createdAt: existing?.createdAt || new Date().toISOString(),
+        dueDate: dueInput.value || null,
+        status: existing?.status || "pending",
+        estimatedMinutes: estInput.value ? +estInput.value : null,
+        actualMinutes: existing?.actualMinutes ?? null,
+        tags: tagsInput.value.split(",").map(s=>s.trim()).filter(Boolean),
+        isHabit: isHabitInput.checked,
+        streak: existing?.streak || 0,
+        lastDoneAt: existing?.lastDoneAt || null
+      };
+      if (!task.title) return;
+      if (existing) {
+        state.tasks = state.tasks.map(t => t.id === id ? task : t);
+      } else {
+        state.tasks.push(task);
+      }
+      saveState(state);
+      clearForm();
+      renderAll();
+    };
+
+    function clearForm() {
+      taskIdInput.value = ""; titleInput.value = ""; notesInput.value = "";
+      dueInput.value = ""; estInput.value = ""; tagsInput.value = "";
+      isHabitInput.checked = false; cancelEditBtn.style.display = "none";
+      titleInput.focus();
+    }
+
+    function editTask(id) {
+      const t = state.tasks.find(t=>t.id===id);
+      if (!t) return;
+      taskIdInput.value = t.id; titleInput.value = t.title;
+      notesInput.value = t.notes||""; dueInput.value = t.dueDate||"";
+      estInput.value = t.estimatedMinutes||""; 
+      tagsInput.value = t.tags?.join(", ")||""; 
+      isHabitInput.checked = !!t.isHabit;
+      cancelEditBtn.style.display = "block"; 
+      titleInput.focus();
+    }
+
+    function deleteTask(id) {
+      state.tasks = state.tasks.filter(t=>t.id!==id);
+      saveState(state); renderAll();
+    }
+
+    function toggleDone(id) {
+      const t = state.tasks.find(t=>t.id===id);
+      if (!t) return;
+      const now = new Date().toISOString();
+      if (t.status === "done") {
+        t.status = "pending";
+      } else {
+        t.status = "done";
+        t.actualMinutes ??= t.estimatedMinutes;
+        if (t.isHabit) {
+          if (!t.lastDoneAt || !isSameDay(t.lastDoneAt, todayISO())) {
+            t.streak = t.lastDoneAt && isSameDay(new Date(Date.parse(t.lastDoneAt)+86400000).toISOString().slice(0,10), todayISO()) ? (t.streak||0)+1 : 1;
+          }
+          t.lastDoneAt = now;
+        }
+      }
+      saveState(state); renderAll();
+    }
+
+    function logMinutes(id) {
+      const t = state.tasks.find(t=>t.id===id);
+      if (!t) return;
+      const val = prompt("Actual minutes spent?", t.actualMinutes ?? t.estimatedMinutes ?? "");
+      if (val === null || val === "") return;
+      const num = +val;
+      if (!isNaN(num)) {
+        t.actualMinutes = num;
+        saveState(state);
+        renderAll();
+      }
+    }
+
+    // Rendering
+    function renderTaskList() {
+      taskListEl.innerHTML = "";
+      const statusFilter = filterStatusEl.value;
+      const typeFilter = filterTypeEl.value;
+      
+      state.tasks.slice()
+        .sort((a,b) => (a.dueDate || "").localeCompare(b.dueDate || ""))
+        .filter(t => statusFilter === "all" || t.status === statusFilter)
+        .filter(t => typeFilter === "all" || (typeFilter === "task" ? !t.isHabit : t.isHabit))
+        .forEach(t => {
+          const li = document.createElement("li"); li.className = "task-item";
+          
+          const main = document.createElement("div"); main.className = "task-main-line";
+          const cb = document.createElement("input"); cb.type = "checkbox";
+          cb.checked = t.status === "done"; cb.onchange = () => toggleDone(t.id);
+          
+          const title = document.createElement("span"); title.className = "task-title";
+          title.textContent = t.title;
+          if (t.status === "done") title.style.textDecoration = "line-through";
+          
+          const badges = document.createElement("span");
+          if (t.isHabit) {
+            const b = document.createElement("span"); b.className = "badge badge-habit";
+            b.textContent = `Habit(${t.streak || 0})`; badges.append(b);
+          }
+          if (t.status === "done") {
+            const b = document.createElement("span"); b.className = "badge badge-done";
+            b.textContent = "Done"; badges.append(b);
+          }
+          
+          main.append(cb, title, badges);
+          
+          const meta = document.createElement("div"); meta.className = "task-meta";
+          const bits = [];
+          if (t.dueDate) bits.push(`Due ${t.dueDate}`);
+          if (t.estimatedMinutes) bits.push(`${t.estimatedMinutes}m`);
+          if (t.actualMinutes) bits.push(`${t.actualMinutes}m actual`);
+          if (t.tags?.length) bits.push(t.tags.join(", "));
+          meta.textContent = bits.join(" • ");
+          
+          const actions = document.createElement("div"); actions.className = "task-actions";
+          ["Edit", "Log min", "Del"].forEach(text => {
+            const btn = document.createElement("button");
+            btn.textContent = text.replace(" min", "m");
+            btn.onclick = text === "Edit" ? () => editTask(t.id) :
+                         text === "Del" ? () => { if(confirm("Delete?")) deleteTask(t.id); } :
+                         () => logMinutes(t.id);
+            actions.append(btn);
+          });
+          
+          li.append(main, meta, actions);
+          taskListEl.append(li);
+        });
+    }
+
+    function computeRecommendations() {
+      const today = todayISO(); const now = new Date();
+      const pending = state.tasks.filter(t => t.status !== "done");
+      return pending.map(t => {
+        let score = 0; let reasons = [];
+        if (t.isHabit) { 
+          score += 40; reasons.push("habit");
+          if (!t.lastDoneAt || !isSameDay(t.lastDoneAt, today)) { score += 15; reasons.push("missed"); }
+          score += Math.min((t.streak || 0) * 2, 10);
+        }
+        if (t.dueDate) {
+          const days = (new Date(t.dueDate) - now) / 86400000;
+          if (days <= 0) { score += 30; reasons.push("overdue"); }
+          else if (days <= 1) score += 25;
+          else if (days <= 3) score += 20;
+          else if (days <= 7) score += 10;
+        }
+        if (t.estimatedMinutes && t.estimatedMinutes <= 15) { score += 15; reasons.push("quick"); }
+        return { task: t, score: Math.round(score * 10) / 10, reasons };
+      }).filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8);
+    }
+
+    function renderRecommendations() {
+      recListEl.innerHTML = "";
+      const recs = computeRecommendations();
+      if (!recs.length) {
+        recListEl.innerHTML = "<li class='task-item'><div>No priority tasks. Add some!</div></li>";
+        return;
+      }
+      recs.forEach(({ task: t, score, reasons }) => {
+        const li = document.createElement("li"); li.className = "task-item";
+        const header = document.createElement("div"); header.className = "task-main-line";
+        header.innerHTML = `<span class="score-badge">${score}</span><span class="task-title">${t.title}</span>`;
+        const reasonsDiv = document.createElement("div"); reasonsDiv.className = "task-meta";
+        reasonsDiv.textContent = reasons.join(", ");
+        li.append(header, reasonsDiv);
+        recListEl.append(li);
+      });
+    }
+
+    // Calendar
+    const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    let currentMonth = new Date();
+    
+    document.getElementById("prev-month").onclick = () => { currentMonth.setMonth(currentMonth.getMonth() - 1); renderHabitCalendar(); };
+    document.getElementById("next-month").onclick = () => { currentMonth.setMonth(currentMonth.getMonth() + 1); renderHabitCalendar(); };
+
+    function getHabitHistory() {
+      const history = {};
+      state.tasks.filter(t => t.isHabit && t.lastDoneAt).forEach(t => {
+        const date = t.lastDoneAt.slice(0, 10);
+        history[date] = (history[date] || 0) + 1;
+      });
+      return history;
+    }
+
+    function renderHabitCalendar() {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      document.getElementById("current-month").textContent = `${monthNames[month]} ${year}`;
+      
+      const firstDay = new Date(year, month, 1);
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - firstDay.getDay());
+      
+      const history = getHabitHistory();
+      const container = document.createElement("div");
+      container.className = "calendar-container";
+      
+      const grid = document.createElement("div");
+      grid.className = "calendar-grid";
+      
+      WEEKDAYS.forEach(day => {
+        const th = document.createElement("div");
+        th.className = "weekday";
+        th.textContent = day;
+        grid.appendChild(th);
+      });
+      
+      const today = todayISO();
+      for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateStr = date.toISOString().slice(0, 10);
+        
+        const cell = document.createElement("div");
+        cell.className = "day-cell";
+        
+        if (date.getMonth() !== month) {
+          cell.classList.add("day-outside");
+        } else if (dateStr === today) {
+          cell.classList.add("day-today");
+        }
+        
+        cell.textContent = date.getDate();
+        cell.title = dateStr;
+        
+        const completions = history[dateStr] || 0;
+        if (completions > 0) {
+          cell.classList.add(`day-completed-${Math.min(completions, 3)}`);
+          cell.title += ` • ${completions} habit${completions > 1 ? 's' : ''} done`;
+        } else {
+          cell.classList.add("day-empty");
+        }
+        
+        grid.appendChild(cell);
+      }
+      
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      legend.innerHTML = `
+        <div class="legend-item">
+          <div class="legend-swatch" style="background: linear-gradient(135deg, var(--accent), rgba(75,140,255,0.4));"></div>
+          <span>1 habit</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background: linear-gradient(135deg, var(--success), rgba(75,255,179,0.6));"></div>
+          <span>2 habits</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background: linear-gradient(135deg, var(--success), #22c55e);"></div>
+          <span>3+ habits</span>
+        </div>
+      `;
+      
+      container.appendChild(grid);
+      container.appendChild(legend);
+      habitCalendarEl.innerHTML = "";
+      habitCalendarEl.appendChild(container);
+    }
+
+    function renderReport() {
+      const now = new Date();
+      const dayMs = 86400000;
+      const last7 = new Date(now.getTime() - 7 * dayMs).toISOString();
+      const done7 = state.tasks.filter(t => t.status === "done" && t.lastDoneAt && t.lastDoneAt >= last7);
+      const est7 = done7.reduce((s, t) => s + (t.estimatedMinutes || 0), 0);
+      const act7 = done7.reduce((s, t) => s + (t.actualMinutes || 0), 0);
+      const habits = state.tasks.filter(t => t.isHabit);
+      const avgStreak = habits.length ? (habits.reduce((s, t) => s + (t.streak || 0), 0) / habits.length).toFixed(1) : 0;
+      
+      reportSummaryEl.innerHTML = `
+        <div>✅ ${done7.length} tasks done (7d)</div>
+        <div>⏱️ ${est7}m estimated vs ${act7}m actual (${est7 && act7 ? (act7 / est7 * 100).toFixed(0) : '--'}%)</div>
+        <div>🔥 ${habits.length} habits • avg streak ${avgStreak}</div>
+      `;
+    }
+
+    // Templates
+    const BUILTIN_TEMPLATES = [
+      {id:"daily",name:"Daily Review",title:"Daily review & plan",notes:"Wins/misses + top 3",estimatedMinutes:15,tags:["review"],isHabit:true},
+      {id:"code",name:"Code Sprint",title:"Code sprint (90min)",notes:"Pomodoro x6",estimatedMinutes:90,tags:["coding"]},
+      {id:"gym",name:"Gym Weights",title:"Gym - weights + cardio",estimatedMinutes:60,tags:["fitness"],isHabit:true},
+      {id:"finance",name:"Portfolio",title:"Review portfolio P&L",notes:"Positions + news",estimatedMinutes:20,tags:["finance"]}
+    ];
+
+    function loadTemplates() {
+      try { 
+        return JSON.parse(localStorage.getItem(TEMPLATES_KEY)) || BUILTIN_TEMPLATES; 
+      } catch { 
+        return BUILTIN_TEMPLATES; 
+      }
+    }
+    function saveTemplates(templates) { 
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates)); 
+    }
+    let templates = loadTemplates();
+
+    function renderTemplates() {
+      templateListEl.innerHTML = "";
+      templates.forEach(t => {
+        const btn = document.createElement("button"); 
+        btn.className = "template-btn";
+        btn.innerHTML = `<div class="template-name">${t.name}</div><div class="template-meta">${t.title.slice(0,25)}${t.title.length>25?'...':''}</div>`;
+        btn.onclick = () => {
+          titleInput.value = t.title;
+          notesInput.value = t.notes || "";
+          estInput.value = t.estimatedMinutes || "";
+          tagsInput.value = (t.tags || []).join(", ");
+          isHabitInput.checked = !!t.isHabit;
+          titleInput.focus();
+        };
+        templateListEl.append(btn);
+      });
+    }
+
+    document.getElementById("save-current-template").onclick = () => {
+      const name = prompt("Template name?");
+      if (!name || !titleInput.value.trim()) return alert("Need name + title");
+      templates.push({
+        id: uuid(),
+        name: name.trim(),
+        title: titleInput.value.trim(),
+        notes: notesInput.value.trim(),
+        estimatedMinutes: estInput.value ? +estInput.value : null,
+        tags: tagsInput.value.split(",").map(s=>s.trim()).filter(Boolean),
+        isHabit: isHabitInput.checked
+      });
+      saveTemplates(templates);
+      renderTemplates();
+      alert(`Saved "${name}"`);
+    };
+
+    // CSV Export
+    document.getElementById("export-csv").onclick = () => {
+      const period = document.getElementById("csv-period").value;
+      const now = new Date();
+      const cutoff = period === "all" ? 0 : now.getTime() - (+period * 86400000);
+      const rows = [["Date","Task","Status","Est","Actual","Tags","Habit","Streak","Notes"]];
+      
+      state.tasks
+        .filter(t => t.status === "done" && t.lastDoneAt && (period === "all" || new Date(t.lastDoneAt).getTime() >= cutoff))
+        .sort((a,b) => new Date(b.lastDoneAt) - new Date(a.lastDoneAt))
+        .forEach(t => rows.push([
+          t.lastDoneAt?.slice(0,10) || "",
+          `"${t.title}"`, t.status,
+          t.estimatedMinutes || "", t.actualMinutes || "",
+          (t.tags || []).join(";") || "",
+          t.isHabit ? "YES" : "", t.streak || "",
+          `"${t.notes || ''}"`
+        ]));
+      
+      const csv = rows.map(r => r.join(",")).join("\n");
+      saveAs(new Blob([csv], {type: "text/csv"}), `performance-${todayISO()}-${period}d.csv`);
+    };
+
+    // Sync/Encryption
+    document.getElementById("export-encrypted").onclick = async () => {
+      const passphrase = document.getElementById("sync-passphrase").value.trim();
+      if (!passphrase) return alert("Enter passphrase");
+      try {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await crypto.subtle.deriveKey(
+          {name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"},
+          await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]),
+          {name: "AES-GCM", length: 256}, false, ["encrypt"]
+        );
+        const ct = await crypto.subtle.encrypt(
+          {name: "AES-GCM", iv}, 
+          key, 
+          new TextEncoder().encode(JSON.stringify(state))
+        );
+        const combined = new Uint8Array(salt.length + iv.length + ct.byteLength);
+        combined.set(salt, 0); combined.set(iv, 16); combined.set(new Uint8Array(ct), 28);
+        saveAs(new Blob([btoa(String.fromCharCode(...combined))], {type: "application/json"}), `tasks-${todayISO()}.json.enc`);
+      } catch(e) { alert("Export failed"); }
+    };
+
+    document.getElementById("import-trigger").onclick = () => document.getElementById("import-file").click();
+    document.getElementById("import-file").onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      const passphrase = document.getElementById("sync-passphrase").value.trim();
+      if (!passphrase) return alert("Enter passphrase");
+      try {
+        const text = await file.text();
+        const combined = Uint8Array.from(atob(text), c => c.charCodeAt(0));
+        const salt = combined.slice(0, 16);
+        const iv = combined.slice(16, 28);
+        const ct = combined.slice(28);
+        const key = await crypto.subtle.deriveKey(
+          {name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"},
+          await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]),
+          {name: "AES-GCM", length: 256}, false, ["decrypt"]
+        );
+        state = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, ct)));
+        saveState(state);
+        renderAll();
+        alert("Imported successfully!");
+      } catch(e) { alert("Import failed - wrong passphrase?"); }
+    };
+
+    // Theme
+    function initTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      const theme = saved === "system" ? system : (saved || system);
+      document.documentElement.setAttribute("data-theme", theme);
+      document.getElementById("theme-select").value = saved || "system";
+    }
+
+    document.getElementById("theme-select").onchange = e => {
+      if (e.target.value === "system") localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, e.target.value);
+      const theme = e.target.value === "system" ? 
+        window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" : 
+        e.target.value;
+      document.documentElement.setAttribute("data-theme", theme);
+    };
+
+    // Event listeners
+    cancelEditBtn.onclick = clearForm;
+    filterStatusEl.onchange = filterTypeEl.onchange = renderTaskList;
+    document.getElementById("refresh-recs").onclick = renderRecommendations;
+
+    // Init
+    function renderAll() {
+      renderTaskList();
+      renderHabitCalendar();
+      renderReport();
+      renderRecommendations();
+      renderTemplates();
+    }
+
+    initTheme();
+    renderAll();
+    titleInput.focus();
+  </script>
+</body>
+</html>
