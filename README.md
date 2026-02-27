@@ -1,7 +1,7 @@
 # task-habit-tracker
 Standalone localized task and habit tracker, with encrypted backup and import options.
 Generates an encrypted JSON using pass-phrase to save and send. So, asynchronous concurrent updating can be done across devices without others of snooping.
-# Task & Habit Tracker 🚀
+# Task & Habit Tracker 
 
 > **Single-file productivity app** - Tasks + Habits + Analytics + Sync. Zero setup. Works offline.
 
@@ -9,7 +9,7 @@ Generates an encrypted JSON using pass-phrase to save and send. So, asynchronous
 [![Mobile Ready](https://img.shields.io/badge/Mobile-First-green)](https://nrupala.github.io/task-habit-tracker)
 [![Offline](https://img.shields.io/badge/Offline-gray)](https://nrupala.github.io/task-habit-tracker)
 
-## ✨ **Features**
+## **Features**
 
 | Feature | Description |
 |---------|-------------|
@@ -22,7 +22,7 @@ Generates an encrypted JSON using pass-phrase to save and send. So, asynchronous
 | **Themes** | Dark/Light/System with perfect contrast |
 | **Mobile** | Responsive + iOS/Android home screen install |
 
-## 🎮 **Quick Start**
+## **Quick Start**
 
 1. **Save** `index.html` → double-click
 2. **Add task** → "Daily review" → Save
@@ -49,12 +49,12 @@ Portfolio Review (20m)
 ## 📊 **CSV Export Format**
 Date,Task,Status,Est,Actual,Tags,Habit,Streak,Notes
 2026-02-26,"Daily review",done,15,12,"review;planning",YES,3,"Wins/misses"
-## 🎨 **Screenshots**
+##  **Screenshots**
 ![Desktop](docs/screenshots/desktop.jpeg)
 ![Mobile](docs/screenshots/mobile.jpeg)
 ![Calendar](docs/screenshots/calendar.jpeg)
 
-## 🚀 **Deployment Options**
+## **Deployment Options**
 
 | Platform | Steps | URL |
 |----------|-------|-----|
