@@ -40,7 +40,8 @@ Device 1: Export Encrypted → Google Drive
 Device 2: Download → Import & Decrypt (same passphrase)
 
 
-## 🛠 **Preloaded Templates** You can edit these in code to be different from what is loaded. 
+## 🛠 **Preloaded Templates** 
+Following is default set of preloaded templates. You can edit these in code or add more templates via the add task section. This enables customization. 
 Daily Review (15m, habit)
 Code Sprint (90m)
 Gym Weights (60m, habit)
