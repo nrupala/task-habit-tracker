@@ -74,8 +74,8 @@
     @media (min-width: 600px) {
       main { grid-template-columns: 1fr 1fr; }
       #task-form-section { grid-row: span 2; }
-      #templates-section { grid-row: 1; }
-      #task-list-section { grid-row: 2; }
+      #templates-section { position: relative; grid-row: 2; }
+      #task-list-section { grid-row: 1; }
     }
     @media (min-width: 900px) {
       main { 
@@ -84,7 +84,7 @@
         gap: 1.5rem;
       }
       #task-form-section { grid-column: 1; grid-row: 1 / span 3; }
-      #templates-section { grid-column: 2; grid-row: 1; }
+      #templates-section { position: relative; grid-row: 2; }
       #task-list-section { grid-column: 3; grid-row: 1 / span 2; }
       #recommendation-section { grid-column: 4; grid-row: 1; }
       #report-section { grid-column: 4; grid-row: 2; }
@@ -844,6 +844,7 @@
   </script>
 </body>
 </html>
+
 
 
 
