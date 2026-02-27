@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Task & Habit Tracker</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha512-5x3rHjP35W2cX8Cnj1qFQ1AdwLrYbWzB0HqQw8dM5D38H0i7mN27mM5cA6dl8cX3r3Wk6dP8nW0w9VbP6F7YVg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     :root {
       --bg-primary: #0b1020;
@@ -88,7 +88,7 @@
       #task-list-section { grid-column: 3; grid-row: 1 / span 2; }
       #recommendation-section { grid-column: 4; grid-row: 1; }
       #report-section { grid-column: 4; grid-row: 2; }
-      #habit-section { grid-column: 2 / span 3; grid-row: 3; }
+      #habit-section { position: relative;} //letting the positioning relative
       #sync-section { grid-column: 4; grid-row: 3; }
     }
     @media (min-width: 1400px) {
@@ -170,6 +170,7 @@
     .template-btn:hover { background: var(--accent) !important; color: white !important; }
     .template-name { font-weight: bold; }
     .template-meta { font-size: 0.75rem; color: var(--text-secondary); }
+    #habit-section {position: relative;}
     #habit-calendar {
       height: 300px; overflow-x: auto;
       background: var(--bg-primary);
@@ -226,8 +227,8 @@
 }
     .calendar-grid {
       display: grid;
-      grid-template-columns: repeat(8, 38px);
-      grid-template-rows: repeat(6, 38px);
+      grid-template-columns: repeat(7, 38px);
+      grid-template-rows: repeat(7, 38px);
       gap: 4px;
       justify-content: start;
     }
@@ -248,7 +249,7 @@
     .day-empty { background: rgba(0,0,0,0.1); visibility: visible; }
     .day-completed-1 { background: linear-gradient(135deg, var(--accent), rgba(75,140,255,0.4)); color: white; }
     .day-completed-2 { background: linear-gradient(135deg, var(--success), rgba(75,255,179,0.6)); color: white; }
-    .day-completed-3+ { background: linear-gradient(135deg, var(--success), #22c55e); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(75,255,179,0.4); }
+    .day-completed-3 { background: linear-gradient(135deg, var(--success), #22c55e); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(75,255,179,0.4); }
     .day-today { background: var(--accent); color: white !important; box-shadow: 0 0 0 3px rgba(75,140,255,0.4); font-weight: bold; }
     .legend { display: flex; gap: 1rem; font-size: 0.8rem; margin-top: 0.5rem; }
     .legend-item { display: flex; align-items: center; gap: 0.25rem; }
@@ -843,4 +844,5 @@
   </script>
 </body>
 </html>
+
 
