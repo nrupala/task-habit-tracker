@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Verify files
+      run: |
+        echo "Repository structure:"
+        ls -la
+        echo "Checking key files:"
+        if [ -f "index.html" ]; then echo "✓ index.html exists"; else echo "✗ index.html missing"; exit 1; fi
+        if [ -f "task-habit-tracker.html" ]; then echo "✓ task-habit-tracker.html exists"; else echo "✗ task-habit-tracker.html missing"; exit 1; fi
+        if [ -f "README.md" ]; then echo "✓ README.md exists"; else echo "✗ README.md missing"; exit 1; fi
+        if [ -f "LICENSE" ]; then echo "✓ LICENSE exists"; else echo "✗ LICENSE missing"; exit 1; fi
